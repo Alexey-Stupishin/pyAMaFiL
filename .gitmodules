@@ -1,0 +1,3 @@
+[submodule "AMaFiL"]
+	path = AMaFiL
+	url = ../AMaFiL.git
