@@ -1,0 +1,4 @@
+[submodule "src/AMaFiL"]
+	path = src/AMaFiL
+	url = ../AMaFiL.git
+	branch = master
