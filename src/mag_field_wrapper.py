@@ -50,7 +50,7 @@ class MagFieldWrapper:
         get_version_func.restype = self.__mint
 
         NLFFF_func = lib_mfw.mfoNLFFFCore
-        NLFFF_func.argtypes = [self.__mpint1, self.__mptr3, self.__mptr3, self.__mptr3, self.__mreal]
+        NLFFF_func.argtypes = [self.__mpint1, self.__mptr3, self.__mptr3, self.__mptr3]
         NLFFF_func.restype = self.__mint
 
         lines_func = lib_mfw.mfoGetLines
@@ -102,16 +102,24 @@ class MagFieldWrapper:
         box = sav_data.get('box', sav_data.get('pbox'))
 
         box = self._as_dict(box[0])
-        self.__by = np.transpose(box['BX'], (0, 2, 1)).astype(np.float64, order="C")
-        self.__bx = np.transpose(box['BY'], (0, 2, 1)).astype(np.float64, order="C")
-        self.__bz = np.transpose(box['BZ'], (0, 2, 1)).astype(np.float64, order="C")
+        
+        self.load_cube_vars(box['BY'], box['BX'], box['BZ'], box['DR'][0])
+
+#-------------------------------------------------------------------------------
+    def load_cube_vars(self, bx, by, bz, dr, dr1 = None, dr2 = None):
+        self.__by = bx.transpose((0, 2, 1)).astype(np.float64, order="C")
+        self.__bx = by.transpose((0, 2, 1)).astype(np.float64, order="C")
+        self.__bz = bz.transpose((0, 2, 1)).astype(np.float64, order="C")
         Nc = self.__bx.shape
         self.__N = np.array([Nc[2], Nc[1], Nc[0]], dtype = np.int32)
-        self.__step = (np.array([box['DR'][2], box['DR'][1], box['DR'][0]], dtype = np.float64) * sun.radius).to(u.cm).value
+        
+        if dr1 is None:
+            dr1 = dr    
+        if dr2 is None:
+            dr2 = dr    
+        self.__step = (np.array([dr, dr1, dr2], dtype = np.float64)) * sun.radius.to(u.cm).value
 
-        pass
-
-    #-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
     def NLFFF(self
             , weight_bound_size = 0.1
             , derivative_stencil = 3
@@ -124,13 +132,13 @@ class MagFieldWrapper:
         self.set_int('derivative_stencil', derivative_stencil)
         self.set_int('dense_grid_use', dense_grid_use)
 
-        rc = self.__func_set['NLFFF_func'](self.__N, self.__bx, self.__by, self.__bz, weight_bound_size)
+        rc = self.__func_set['NLFFF_func'](self.__N, self.__bx, self.__by, self.__bz)
 
         # back transpose? 
 
         return dict(bx = self.__bx, by = self.__by, bz = self.__bz)
 
-    #-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
     @property
     def energy(self):
         left = np.floor(0.1*self.__N).astype(np.int32)

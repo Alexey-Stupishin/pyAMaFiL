@@ -2,7 +2,7 @@
 
 import os, sys
 import numpy as np
-from MagFieldWrapper import MagFieldWrapper
+from mag_field_wrapper import MagFieldWrapper
 from pathlib import Path
 
 #-------------------------------------------------------------------------------
@@ -10,17 +10,25 @@ from pathlib import Path
 m = sys.modules[__name__]
 this_path = os.path.dirname(m.__file__)
 
-# print("Loading library from", lib_path)
+lib_file = this_path + '../src/AMaFiL/binaries/WWNLFFFReconstruction.dll'
+print("Loading library from", lib_file)
 
-# maglib = MagFieldWrapper(lib_path)
-maglib = MagFieldWrapper(this_path + '../../../binaries/WWNLFFFReconstruction.dll')
+maglib = MagFieldWrapper(lib_file)
 
+data_path = this_path + 'Data/'
+
+# potential
 print('Load potential cube ...')
-# maglib.load_cube(data_path / '11312_hmi.M_720s.20111010_085818.W120N23CR.CEA.POT.sav')
-maglib.load_cube('g:/BIGData/Work/ISSI/Work/Disambig/NoSmooth2/Trim/Potential/HMI+SST_combined_BOX.sav')
+maglib.load_cube(data_path / '11312_hmi.M_720s.20111010_085818.W120N23CR.CEA.POT.sav')
 energy_pot = maglib.energy
 print('Potential energy: ' + str(energy_pot) + ' erg')
 
+# NLFFF
+print('Load boundary cube ...')
+maglib.load_cube(data_path / '11312_hmi.M_720s.20111010_085818.W120N23CR.CEA.BND.sav')
+### ! NLFFF
+
+# Lines (seeds)
 v = maglib.est_max_coords()
 
 sz = maglib.get_box_size
