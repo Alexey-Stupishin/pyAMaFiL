@@ -126,6 +126,7 @@ class MagFieldWrapper:
             , weight_bound_size = 0.1
             , derivative_stencil = 3
             , dense_grid_use = 1
+            , debug_input = 0
              ):
 
         # assert box is None
@@ -133,6 +134,7 @@ class MagFieldWrapper:
         self.set_double('weight_bound_size', weight_bound_size)
         self.set_int('derivative_stencil', derivative_stencil)
         self.set_int('dense_grid_use', dense_grid_use)
+        self.set_int('debug_input', debug_input)
 
         rc = self.__func_set['NLFFF_func'](self.__N, self.__bx, self.__by, self.__bz)
 
