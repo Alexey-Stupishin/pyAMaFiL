@@ -103,7 +103,7 @@ class MagFieldWrapper:
 
         box = self._as_dict(box[0])
         
-        self.load_cube_vars(box['BY'], box['BX'], box['BZ'], box['DR'])
+        self.load_cube_vars(box['BX'], box['BY'], box['BZ'], box['DR'])
         self.__step *= sun.radius.to(u.cm).value
 
 #-------------------------------------------------------------------------------
