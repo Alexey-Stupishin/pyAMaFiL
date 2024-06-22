@@ -1,5 +1,15 @@
 # pyAMaFiL
 
+#### Installing from Github
+
+```bash
+pip install -U git+https://github.com/Alexey-Stupishin/pyAMaFiL
+```
+
+#### PyPI
+
+Coming soon!
+
 #### Testing development version
 
 ```bash
