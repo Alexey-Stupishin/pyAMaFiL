@@ -1,4 +1,4 @@
-[submodule "src/AMaFiL"]
-	path = src/AMaFiL
-	url = ../AMaFiL.git
+[submodule "AMaFiL"]
+	path = AMaFiL
+	url = https://github.com/Alexey-Stupishin/AMaFiL
 	branch = master

@@ -4,6 +4,7 @@ from numpy import linalg as LA
 from scipy.io import readsav
 import astropy.units as u
 import sunpy.sun.constants as sun
+from pathlib import Path
 
 class MagFieldWrapper:
     PASSED_NONE   = 0
@@ -16,7 +17,11 @@ class MagFieldWrapper:
         return {name:record_[name] for name in record_.dtype.names}
 
     #-------------------------------------------------------------------------------
-    def __init__(self, lib_path):
+    def __init__(self, lib_path=""):
+        if lib_path == "":
+            lib_path = list(Path(__file__).parent.glob("WWNLFFFReconstruction*"))[0]
+            #print(lib_path)
+
         self.__mptr1 = np.ctypeslib.ndpointer(dtype = np.float64, ndim = 1, flags = "C")
         self.__mptr2 = np.ctypeslib.ndpointer(dtype = np.float64, ndim = 2, flags = "C")
         self.__mptr3 = np.ctypeslib.ndpointer(dtype = np.float64, ndim = 3, flags = "C")
