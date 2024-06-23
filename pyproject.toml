@@ -11,3 +11,10 @@ dependencies = [
     "sunpy",
     'importlib-metadata; python_version>="3.10"',
 ]
+
+[tool.cibuildwheel]
+skip = ["cp36*", "cp37*", "cp38*", "cp39*", "pp*", "*musl*"]
+
+[[tool.cibuildwheel.overrides]]
+select = "cp3{12}-*"
+manylinux-x86_64-image = "manylinux_2_28"
