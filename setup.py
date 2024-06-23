@@ -1,8 +1,23 @@
 #!/usr/bin/env python3
+
+import platform
 from setuptools import Extension, setup
 from pathlib import Path
 import pdb
 import sys
+
+link_flags = {
+    'Linux': ["-shared", "-lm", "-pthread"],
+    'Windows': ["-shared", "-lm", "-pthread"],
+    'Darwin': ["-lm", "-pthread"]
+}
+
+current_os = platform.system()
+
+if current_os in link_flags:
+    extra_link = link_flags[current_os]
+else:
+    extra_link = []
 
 rp = Path("./AMaFiL")
 
@@ -19,7 +34,6 @@ source_files = []
 for d in source_dirs:
     source_files.extend([str(d / x.name) for x in sorted(d.glob("*.cpp"))])
 #pdb.set_trace()
-#sys.exit(1)
 
 setup(
     ext_modules=[
@@ -29,7 +43,7 @@ setup(
             include_dirs = header_dirs,
             language = "c++",
             extra_compile_args = ["-std=c++11", "-fPIC", "-O2", "-fpermissive"],
-            extra_link_args = ["-shared", "-lm", "-pthread"]
+            extra_link_args = extra_link
         ),
     ]
 )
