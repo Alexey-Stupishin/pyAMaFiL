@@ -13,8 +13,8 @@ dependencies = [
 ]
 
 [tool.cibuildwheel]
-skip = ["cp36*", "cp37*", "cp38*", "cp39*", "pp*", "*musl*"]
+skip = ["cp36*", "cp37*", "cp38*", "cp39*", "pp*", "*musl*", "*macos*"]
 
 [[tool.cibuildwheel.overrides]]
-select = "cp3{12}-*"
+select = "cp*"
 manylinux-x86_64-image = "manylinux_2_28"
