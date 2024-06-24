@@ -13,7 +13,8 @@ dependencies = [
 ]
 
 [tool.cibuildwheel]
-skip = ["cp36*", "cp37*", "cp38*", "cp39*", "pp*", "*musl*", "*macos*"]
+skip = ["cp36*", "cp37*", "cp38*", "cp39*", "pp*", "*musl*"]
+repair-wheel-command = ""
 
 [[tool.cibuildwheel.overrides]]
 select = "cp*"
