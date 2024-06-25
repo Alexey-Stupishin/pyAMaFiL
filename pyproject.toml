@@ -14,8 +14,8 @@ dependencies = [
 
 [tool.cibuildwheel]
 skip = ["cp36*", "cp37*", "cp38*", "cp39*", "pp*", "*musl*"]
-build-frontend = "build[uv]"
-before-build = "./setup.py build_ext --inplace"
+build-frontend = "build"
+#before-build = "./setup.py build_ext --inplace"
 
 [[tool.cibuildwheel.overrides]]
 select = "cp*"
