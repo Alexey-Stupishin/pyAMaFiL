@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=65.4.1", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -14,12 +14,16 @@ dependencies = [
 
 [tool.cibuildwheel]
 skip = ["cp36*", "cp37*", "cp38*", "cp39*", "pp*", "*musl*"]
-build-frontend = "default"
+build-frontend = "build[uv]"
 
 [[tool.cibuildwheel.overrides]]
 select = "cp*"
 manylinux-x86_64-image = "manylinux_2_28"
+manylinux-i686-image = "manylinux2014"
 
+#[[tool.cibuildwheel.overrides]]
+#select = "cp312*"
+#manylinux-x86_64-image = "manylinux_2_34"
 
 [tool.cibuildwheel.linux]
 repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
