@@ -7,9 +7,9 @@ import pdb
 import sys
 
 link_flags = {
-    'Linux': ["-shared"],
-    'Windows': ["-shared"],
-    'Darwin': []
+    'Linux': ["-shared", "-lm", "-pthread"],
+    'Windows': ["-shared", "-lm", "-pthread"],
+    'Darwin': ["-lm", "-pthread"]
 }
 
 current_os = platform.system()
@@ -42,7 +42,7 @@ setup(
             name="pyAMaFiL.WWNLFFFReconstruction",
             sources = source_files,
             include_dirs = header_dirs,
-            libraries = ["m", "pthread"],
+            export_symbols = ["utilInitialize", "utilSetInt", "utilSetDouble", "utilGetVersion", "mfoNLFFFCore", "mfoGetLines"],
             language = "c++",
             extra_compile_args = ["-std=c++11", "-fPIC", "-O2", "-fpermissive"],
             extra_link_args = extra_link
