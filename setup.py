@@ -7,9 +7,9 @@ import pdb
 import sys
 
 link_flags = {
-    'Linux': ["-shared", "-lm", "-pthread"],
-    'Windows': ["-shared", "-lm", "-pthread"],
-    'Darwin': ["-lm", "-pthread"]
+    'Linux': ["-shared"],
+    'Windows': ["-shared"],
+    'Darwin': []
 }
 
 current_os = platform.system()
@@ -34,6 +34,7 @@ source_files = []
 for d in source_dirs:
     source_files.extend([str(d / x.name) for x in sorted(d.glob("*.cpp"))])
 #pdb.set_trace()
+source_files.append("pyinit.cpp")
 
 setup(
     ext_modules=[
@@ -41,6 +42,7 @@ setup(
             name="pyAMaFiL.WWNLFFFReconstruction",
             sources = source_files,
             include_dirs = header_dirs,
+            libraries = ["m", "pthread"],
             language = "c++",
             extra_compile_args = ["-std=c++11", "-fPIC", "-O2", "-fpermissive"],
             extra_link_args = extra_link

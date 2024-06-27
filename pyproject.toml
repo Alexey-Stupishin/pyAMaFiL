@@ -12,10 +12,28 @@ dependencies = [
     'importlib-metadata; python_version>="3.10"',
 ]
 
+description = "Library for reconstructing solar magnetic fields with NLFFF optimization approach"
+authors = ["Alexey G. Stupishin <agstup@yandex.ru>"]
+maintainers = ["Alexey G. Stupishin <agstup@yandex.ru>"]
+keywords = ["Sun", "magnetic fields", "NLFFF", "solar physics"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+url = "https://github.com/Alexey-Stupishin/pyAMaFiL"
+project_urls = {
+    "Bug Tracker": "https://github.com/Alexey-Stupishin/pyAMaFiL/issues",
+    "Documentation": "https://github.com/Alexey-Stupishin/pyAMaFiL",
+    "Source Code": "https://github.com/Alexey-Stupishin/pyAMaFiL",
+}
+
 [tool.cibuildwheel]
 skip = ["cp36*", "cp37*", "cp38*", "cp39*", "pp*", "*musl*"]
 build-frontend = "build"
-#before-build = "./setup.py build_ext --inplace"
 
 [[tool.cibuildwheel.overrides]]
 select = "cp*"
