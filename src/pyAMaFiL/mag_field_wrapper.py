@@ -6,6 +6,16 @@ import astropy.units as u
 import sunpy.sun.constants as sun
 from pathlib import Path
 
+__author__     = "Alexey G. Stupishin"
+__email__      = "agstup@yandex.ru"
+__copyright__  = "SUNCAST project, 2024"
+__license__    = "MIT"
+__version__    = "0.9.2"
+__maintainer__ = "Alexey G. Stupishin"
+__status__     = "beta"
+
+# import pydoc
+
 class MagFieldWrapper:
     PASSED_NONE   = 0
     PASSED_CLOSED = 1
@@ -17,7 +27,7 @@ class MagFieldWrapper:
         return {name:record_[name] for name in record_.dtype.names}
 
     #-------------------------------------------------------------------------------
-    def __init__(self, lib_path=""):
+    def __init__(self, lib_path = ""):
         if lib_path == "":
             lib_path = list(Path(__file__).parent.glob("WWNLFFFReconstruction*"))[0]
             #print(lib_path)
@@ -78,11 +88,11 @@ class MagFieldWrapper:
 
     #-------------------------------------------------------------------------------
     def set_int(self, prop, vint):
-        return self.__func_set['set_int_func'](prop.encode('utf-8'), vint)
+        return self.__func_set['set_int_func'](prop.encode('utf-8'), np.int32(vint))
 
     #-------------------------------------------------------------------------------
     def set_double(self, prop, vdouble):
-        return self.__func_set['set_double_func'](prop.encode('utf-8'), vdouble)
+        return self.__func_set['set_double_func'](prop.encode('utf-8'), np.float64(vdouble))
 
     #-------------------------------------------------------------------------------
     @property
@@ -100,52 +110,125 @@ class MagFieldWrapper:
     def get_box_size(self):
         return self.__N
 
+    # #-------------------------------------------------------------------------------
+    # @property
+    # def box(self):
+    #     # ToDo
+
+    # #-------------------------------------------------------------------------------
+    # @property
+    # def box_type(self):
+    #     # ToDo
+
+    # #-------------------------------------------------------------------------------
+    # def LFFF
+    #     # ToDo
+
     #-------------------------------------------------------------------------------
     def load_cube(self, filename):
+    #     # ToDo rename
+
         sav_data = readsav(filename, python_dict = True)
 
         box = sav_data.get('box', sav_data.get('pbox'))
 
         box = self._as_dict(box[0])
         
-        self.load_cube_vars(box['BX'], box['BY'], box['BZ'], box['DR'])
-        self.__step *= sun.radius.to(u.cm).value
+        # bx = box['BY'].transpose((0, 2, 1)).astype(np.float64, order="C")
+        # by = box['BX'].transpose((0, 2, 1)).astype(np.float64, order="C")
+        # bz = box['BZ'].transpose((0, 2, 1)).astype(np.float64, order="C")
+        # return self.load_cube_vars(bx, by, bz, box['DR'] * u.solRad)
+        
+        return self.load_cube_vars(box['BX'], box['BY'], box['BZ'], box['DR'] * u.solRad)
 
 #-------------------------------------------------------------------------------
     def load_cube_vars(self, bx, by, bz, dr):
-        self.__by = bx.transpose((0, 2, 1)).astype(np.float64, order="C")
-        self.__bx = by.transpose((0, 2, 1)).astype(np.float64, order="C")
-        self.__bz = bz.transpose((0, 2, 1)).astype(np.float64, order="C")
+        """
+            Set initial magnetic field components.
+
+                Parameters
+                ----------
+                bx, by, bz : float
+
+                dr : array-like or singleton astropy.Quantity
+                    
+                Returns
+                -------
+                box : dict
+                    A dictionary with keys "bx", "by", "bz"
+                    bx, by, bz : ndarray
+                        3D np.float64 arrays (input copy)
+                
+        """
+        self.__bx = bx.astype(np.float64, order="C")
+        self.__by = by.astype(np.float64, order="C")
+        self.__bz = bz.astype(np.float64, order="C")
         Nc = self.__bx.shape
         self.__N = np.array([Nc[2], Nc[1], Nc[0]], dtype = np.int32)
         
+        dr = dr.to(u.cm).value
         if np.isscalar(dr):
             step = [dr, dr, dr]
         else:
             step = np.flip(dr)
             
-        self.__step = (np.array(step, dtype = np.float64))
+        self.__step = np.array(step, dtype = np.float64)
+
+        return dict(bx = self.__bx, by = self.__by, bz = self.__bz)
 
 #-------------------------------------------------------------------------------
     def NLFFF(self
             , weight_bound_size = 0.1
             , derivative_stencil = 3
-            , dense_grid_use = 1
-            , debug_input = 0
+            , dense_grid_use = True
+            , debug_input = False
              ):
+        """
+            Wrapper to external call of Weighted Wiegelmann NLFF Field Reconstruction Method.
+            Magnetic field cube should be preliminary set. Field components modified "in place".
 
+                Parameters
+                ----------
+                weight_bound_size : float, optional
+                    Bounary buffer zone size (in parts of corresponding dim. size), 
+                    default is 0.1 (i.e. buffer zone is 10% of dimension size from all boundaries, 
+                    except photosphere plain). 
+                    Use weight_bound_size = 0 for no-buffer-zone approach.
+                    default = 0.1
+
+                dense_grid_use : bool, optional
+                    Use condensed grid approach. `True` is recommended.
+                    default = True
+                
+                derivative_stencil : int, optional
+                    Number of stencil points for derivatives
+                    (experimental, internal use).
+                    default = 3
+
+                debug_input : bool, optional
+                    For internal use.
+                    default = False
+                    
+                Returns
+                -------
+                box : dict
+                    A dictionary with keys "bx", "by", "bz", "rc"
+                    bx, by, bz : ndarray
+                        3D np.float64 arrays of magnetic field components
+                    rc : int
+                        zero if OK, otherwise reconstruction error (to be specified)
+                
+        """
         # assert box is None
 
         self.set_double('weight_bound_size', weight_bound_size)
         self.set_int('derivative_stencil', derivative_stencil)
-        self.set_int('dense_grid_use', dense_grid_use)
-        self.set_int('debug_input', debug_input)
+        self.set_int('dense_grid_use', int(dense_grid_use == True))
+        self.set_int('debug_input', int(debug_input == True))
 
         rc = self.__func_set['NLFFF_func'](self.__N, self.__bx, self.__by, self.__bz)
 
-        # back transpose? 
-
-        return dict(bx = self.__bx, by = self.__by, bz = self.__bz)
+        return dict(bx = self.__bx, by = self.__by, bz = self.__bz, rc = rc)
 
 #-------------------------------------------------------------------------------
     @property
@@ -287,3 +370,5 @@ class MagFieldWrapper:
                    )        
  
        # reorder - 2do ?
+
+# pydoc.writedoc("mag_field_wrapper")
