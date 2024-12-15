@@ -10,7 +10,7 @@ __author__     = "Alexey G. Stupishin"
 __email__      = "agstup@yandex.ru"
 __copyright__  = "SUNCAST project, 2024"
 __license__    = "MIT"
-__version__    = "0.9.2"
+__version__    = "1.0.1"
 __maintainer__ = "Alexey G. Stupishin"
 __status__     = "beta"
 
@@ -124,6 +124,29 @@ class MagFieldWrapper:
     # def LFFF
     #     # ToDo
 
+#-------------------------------------------------------------------------------
+    def get_field(self, rc = 0):
+        return dict(bx = self.__bx.transpose((2,1,0)).copy(), by = self.__by.transpose((2,1,0)).copy(), bz = self.__bz.transpose((2,1,0)).copy(), rc = rc)
+
+#-------------------------------------------------------------------------------
+    def __load_vars(self, bx, by, bz, dr):
+        self.__bx = bx.astype(np.float64, order="C")
+        self.__by = by.astype(np.float64, order="C")
+        self.__bz = bz.astype(np.float64, order="C")
+
+        Nc = self.__bx.shape
+        self.__N = np.array([Nc[2], Nc[1], Nc[0]], dtype = np.int32)
+        
+        dr = dr.to(u.cm).value
+        if np.isscalar(dr):
+            step = [dr, dr, dr]
+        else:
+            step = np.flip(dr)
+            
+        self.__step = np.array(step, dtype = np.float64)
+
+        return self.get_field()
+
     #-------------------------------------------------------------------------------
     def load_cube(self, filename):
     #     # ToDo rename
@@ -134,12 +157,7 @@ class MagFieldWrapper:
 
         box = self._as_dict(box[0])
         
-        # bx = box['BY'].transpose((0, 2, 1)).astype(np.float64, order="C")
-        # by = box['BX'].transpose((0, 2, 1)).astype(np.float64, order="C")
-        # bz = box['BZ'].transpose((0, 2, 1)).astype(np.float64, order="C")
-        # return self.load_cube_vars(bx, by, bz, box['DR'] * u.solRad)
-        
-        return self.load_cube_vars(box['BX'], box['BY'], box['BZ'], box['DR'] * u.solRad)
+        return self.__load_vars(box['BX'], box['BY'], box['BZ'], box['DR'] * u.solRad)
 
 #-------------------------------------------------------------------------------
     def load_cube_vars(self, bx, by, bz, dr):
@@ -160,21 +178,11 @@ class MagFieldWrapper:
                         3D np.float64 arrays (input copy)
                 
         """
-        self.__bx = bx.astype(np.float64, order="C")
-        self.__by = by.astype(np.float64, order="C")
-        self.__bz = bz.astype(np.float64, order="C")
-        Nc = self.__bx.shape
-        self.__N = np.array([Nc[2], Nc[1], Nc[0]], dtype = np.int32)
-        
-        dr = dr.to(u.cm).value
-        if np.isscalar(dr):
-            step = [dr, dr, dr]
-        else:
-            step = np.flip(dr)
-            
-        self.__step = np.array(step, dtype = np.float64)
+        bxt = bx.transpose((2,1,0))
+        byt = by.transpose((2,1,0))
+        bzt = bz.transpose((2,1,0))
 
-        return dict(bx = self.__bx, by = self.__by, bz = self.__bz)
+        return self.__load_vars(bxt, byt, bzt, dr)
 
 #-------------------------------------------------------------------------------
     def NLFFF(self
@@ -228,7 +236,7 @@ class MagFieldWrapper:
 
         rc = self.__func_set['NLFFF_func'](self.__N, self.__bx, self.__by, self.__bz)
 
-        return dict(bx = self.__bx, by = self.__by, bz = self.__bz, rc = rc)
+        return self.get_field(rc = rc)
 
 #-------------------------------------------------------------------------------
     @property
