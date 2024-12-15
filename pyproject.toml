@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyAMaFiL"
-version = "0.0.1"
+version = "1.0.1"
 readme = "README.md"
 
 dependencies = [
