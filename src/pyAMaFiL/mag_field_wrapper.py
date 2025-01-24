@@ -93,7 +93,7 @@ class MagFieldWrapper:
 
         return buffer[0:term]
         
-#-------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------------
     def NLFFF_wrapper(self
             , bx, by, bz  
             , weight_bound_size = 0.1
@@ -148,7 +148,7 @@ class MagFieldWrapper:
         N = np.array([Nc[2], Nc[1], Nc[0]], dtype = np.int32)
         rc = self.__func_set['NLFFF_func'](N, bx, by, bz)
 
-        return self.get_field(rc = rc)
+        return dict(bx = bx, by = by, bz = bz, rc = rc)
 
 #-------------------------------------------------------------------------------
     def est_max_coords(self, N, n_total = 0):

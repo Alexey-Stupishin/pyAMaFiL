@@ -17,9 +17,9 @@ __status__     = "beta"
 # import pydoc
 
 class MagFieldProcessor(MagFieldWrapper):
-    FIELD_NONE = 0
-    FIELD_LFFF = 0
-    FIELD_NLFFF = 0
+    FIELD_NONE =  0
+    FIELD_BOUND = 1
+    FIELD_NLFFF = 2
 
     #-------------------------------------------------------------------------------
     @staticmethod
@@ -37,7 +37,8 @@ class MagFieldProcessor(MagFieldWrapper):
         self.__by    = None
         self.__bz    = None
         self.__step  = None
-        self.status  = self.FIELD_NONE
+        self.__status  = self.FIELD_NONE
+        self.__weight_bound_size = 0.1
 
     # #-------------------------------------------------------------------------------
     # @property
@@ -46,11 +47,11 @@ class MagFieldProcessor(MagFieldWrapper):
 
     #-------------------------------------------------------------------------------
     @property
-    def energy(self):
+    def energy(self, weight_bound_size = 0.1):
         # assert box is None
         N = self.__bx.shape.transpose((2,1,0))
-        left = np.ceil(0.1*N).astype(np.int32)
-        right = np.floor(0.9*N).astype(np.int32)
+        left = np.ceil(weight_bound_size*N).astype(np.int32)
+        right = np.floor((1.0-weight_bound_size)*N).astype(np.int32)
         absB2 = (self.__bx[left[0]:right[0],left[1]:right[1],1:right[2]]**2 
                + self.__by[left[0]:right[0],left[1]:right[1],1:right[2]]**2 
                + self.__bz[left[0]:right[0],left[1]:right[1],1:right[2]]**2 
@@ -62,64 +63,32 @@ class MagFieldProcessor(MagFieldWrapper):
         return totalB2 / 8 / np.pi * volume
 
     #-------------------------------------------------------------------------------
-    def get_field_cube(self, rc = 0):
-        # assert box is None
-        swap = (1,2,0)
-        return dict(bx = self.__by.transpose(swap).copy(), by = self.__bx.transpose(swap).copy(), bz = self.__bz.transpose(swap).copy(), rc = rc)
-
-    #-------------------------------------------------------------------------------
-    def load_bottom(self, plane, dr = 0.001*u.solRad):
-        self.__bxb = plane['by'].transpose(1,0).astype(np.float64, order="C")
-        self.__byb = plane['bx'].transpose(1,0).astype(np.float64, order="C")
-        self.__bzb = plane['bz'].transpose(1,0).astype(np.float64, order="C")
+    def load_bottom(self, bottom, dr = 0.001*u.solRad):
+        self.__bxb = bottom['by'].transpose(1,0).astype(np.float64, order="C")
+        self.__byb = bottom['bx'].transpose(1,0).astype(np.float64, order="C")
+        self.__bzb = bottom['bz'].transpose(1,0).astype(np.float64, order="C")
         self.__stepb = dr
 
     #-------------------------------------------------------------------------------
-    def LFFF(self, z = None, pad = (1, 1), plane = None, dr = 0.001*u.solRad, alpha = 0):
-        # ToDo: if plane, set it
-        # assert is plane
-        MagFieldLinFFF.set_field(self.__bzb, pad)
+    def LFFF_bounded(self, bottom = None, pad = (1, 1), nz = None, dr = 0.001*u.solRad, alpha = 0):
+        if bottom is not None:
+            self.load_bottom(bottom, dr)
         
-        if z is None:
-            # z define by sizes
+        assert self.__bzb is not None
         
-        pot = MagFieldLinFFF.lfff_cube(z, alpha)    
+        lfff = MagFieldLinFFF.create_lfff_cube(self.__bzb, nz = nz, alpha = alpha)    
 
         # this cube, substitute
-
-        return # something
-
-        pass
-
-    #-------------------------------------------------------------------------------
-    def __load_vars(self, bx, by, bz, dr):
-        self.__bx = bx.astype(np.float64, order="C")
-        self.__by = by.astype(np.float64, order="C")
-        self.__bz = bz.astype(np.float64, order="C")
-
-        if np.isscalar(dr):
-            self.__step = [dr, dr, dr]
-        else:
-            self.__step = np.flip(dr)
-            
-        self.status = self.FIELD_LFFF
-
-        return self.get_field_cube()
-
-    #-------------------------------------------------------------------------------
-    def load_cube_sav(self, filename):
-
-        sav_data = readsav(filename, python_dict = True)
-
-        box = sav_data.get('box', sav_data.get('pbox'))
-
-        box = self._as_dict(box[0])
+        lfff['bx'][:,:,0] = self.__bxb
+        lfff['by'][:,:,0] = self.__byb
+        lfff['bz'][:,:,0] = self.__bzb
+        self.__status  = self.FIELD_BOUND
         
-        swap = (0,2,1)
-        return self.__load_vars(np.transpose(box['BY'], swap), np.transpose(box['BX'], swap), np.transpose(box['BZ'], swap), box['DR'] * u.solRad)
+        swap = (2,1,0)
+        return self.__load_vars(lfff['bx'].transpose(swap), lfff['by'].transpose(swap), lfff['bz'].transpose(swap), self.__stepb)
 
     #-------------------------------------------------------------------------------
-    def load_cube_vars(self, box, dr):
+    def load_cube_vars(self, box, dr = 0.001*u.solRad):
         """
             Set initial magnetic field components.
 
@@ -140,6 +109,39 @@ class MagFieldProcessor(MagFieldWrapper):
 
         swap = (2,0,1)
         return self.__load_vars(box['by'].transpose(swap), box['bx'].transpose(swap), box['bz'].transpose(swap), dr)
+
+    #-------------------------------------------------------------------------------
+    def load_cube_sav(self, filename):
+
+        sav_data = readsav(filename, python_dict = True)
+
+        box = sav_data.get('box', sav_data.get('pbox'))
+
+        box = self._as_dict(box[0])
+        
+        swap = (0,2,1)
+        return self.__load_vars(np.transpose(box['BY'], swap), np.transpose(box['BX'], swap), np.transpose(box['BZ'], swap), box['DR'] * u.solRad)
+    
+    #-------------------------------------------------------------------------------
+    def __load_vars(self, bx, by, bz, dr):
+        self.__bx = bx.astype(np.float64, order="C")
+        self.__by = by.astype(np.float64, order="C")
+        self.__bz = bz.astype(np.float64, order="C")
+
+        if np.isscalar(dr):
+            self.__step = [dr, dr, dr]
+        else:
+            self.__step = np.flip(dr)
+            
+        self.status = self.FIELD_BOUND
+
+        return self.get_field_cube()
+
+    #-------------------------------------------------------------------------------
+    def get_field_cube(self, rc = 0):
+        # assert box is None
+        swap = (1,2,0)
+        return dict(bx = self.__by.transpose(swap).copy(), by = self.__bx.transpose(swap).copy(), bz = self.__bz.transpose(swap).copy(), rc = rc)
 
     #-------------------------------------------------------------------------------
     def NLFFF(self
