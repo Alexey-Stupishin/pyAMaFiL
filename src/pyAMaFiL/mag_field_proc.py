@@ -1,8 +1,6 @@
 import numpy as np
 from scipy.io import readsav
 import astropy.units as u
-import sunpy.sun.constants as sun
-from pathlib import Path
 from mag_field_wrapper import MagFieldWrapper
 from mag_field_lin_fff import MagFieldLinFFF
 
@@ -40,24 +38,29 @@ class MagFieldProcessor(MagFieldWrapper):
         self.__status  = self.FIELD_NONE
         self.__weight_bound_size = 0.1
 
-    # #-------------------------------------------------------------------------------
-    # @property
-    # def get_box_size(self):
-    #     return ..........
-
     #-------------------------------------------------------------------------------
-    @property
-    def energy(self, weight_bound_size = 0.1):
-        # assert box is None
-        N = self.__bx.shape.transpose((2,1,0))
-        left = np.ceil(weight_bound_size*N).astype(np.int32)
-        right = np.floor((1.0-weight_bound_size)*N).astype(np.int32)
-        absB2 = (self.__bx[left[0]:right[0],left[1]:right[1],1:right[2]]**2 
-               + self.__by[left[0]:right[0],left[1]:right[1],1:right[2]]**2 
-               + self.__bz[left[0]:right[0],left[1]:right[1],1:right[2]]**2 
+    def energy(self, box = None, weight_bound_size = None, dr = None):
+        if box is None:
+            box = self.get_field_cube()
+        if weight_bound_size is None:
+            weight_bound_size = self.__weight_bound_size
+        if dr is None:
+            dr = self.__step
+
+        assert dr is not None
+            
+        dr = dr.to(u.cm).value
+        if np.isscalar(dr):
+            dr = [dr, dr, dr]
+        
+        N = np.array(np.array(box['bx']).shape)
+        left = np.floor(weight_bound_size*N).astype(np.int32)
+        right = np.ceil((1.0-weight_bound_size)*N).astype(np.int32)
+        absB2 = (box['bx'][left[0]:right[0],left[1]:right[1],0:right[2]]**2 
+               + box['by'][left[0]:right[0],left[1]:right[1],0:right[2]]**2 
+               + box['bz'][left[0]:right[0],left[1]:right[1],0:right[2]]**2 
                 )
         totalB2 = np.sum(absB2)
-        dr = self.__step.to(u.cm).value
         volume = np.prod(dr)
 
         return totalB2 / 8 / np.pi * volume
@@ -76,7 +79,7 @@ class MagFieldProcessor(MagFieldWrapper):
         
         assert self.__bzb is not None
         
-        lfff = MagFieldLinFFF.create_lfff_cube(self.__bzb, nz = nz, alpha = alpha)    
+        lfff = MagFieldLinFFF.create_lfff_cube(self.__bzb, pad = pad, nz = nz, alpha = alpha)    
 
         # this cube, substitute
         lfff['bx'][:,:,0] = self.__bxb
@@ -131,7 +134,7 @@ class MagFieldProcessor(MagFieldWrapper):
         if np.isscalar(dr):
             self.__step = [dr, dr, dr]
         else:
-            self.__step = np.flip(dr)
+            self.__step = dr
             
         self.status = self.FIELD_BOUND
 
@@ -139,7 +142,7 @@ class MagFieldProcessor(MagFieldWrapper):
 
     #-------------------------------------------------------------------------------
     def get_field_cube(self, rc = 0):
-        # assert box is None
+        assert self.__bx is not None and self.__by is not None and self.__bz is not None
         swap = (1,2,0)
         return dict(bx = self.__by.transpose(swap).copy(), by = self.__bx.transpose(swap).copy(), bz = self.__bz.transpose(swap).copy(), rc = rc)
 
@@ -187,6 +190,7 @@ class MagFieldProcessor(MagFieldWrapper):
                 
         """
         # assert box is None
+        self.__weight_bound_size = weight_bound_size
 
         rc = super().NLFFF_wrapper(self.__bx, self.__by, self.__bz, weight_bound_size, derivative_stencil, dense_grid_use, debug_input)
 
