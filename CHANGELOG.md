@@ -4,3 +4,4 @@
 * 15 Dec 2024 - swap/transposition corrections
 * **15 Dec 2024 - tag 1.0.2** 
 * 26 Jan 2025 - general refactoring, swap/transposition improvement
+* **26 Jan 2025 - tag 1.1.0** 

@@ -27,10 +27,6 @@ class MagFieldProcessor(MagFieldWrapper):
     #-------------------------------------------------------------------------------
     def __init__(self, lib_path = ""):
         super().__init__(lib_path)
-        self.__bxb   = None
-        self.__byb   = None
-        self.__bzb   = None
-        self.__stepb = None
         self.__bx    = None
         self.__by    = None
         self.__bz    = None
@@ -66,31 +62,6 @@ class MagFieldProcessor(MagFieldWrapper):
         return totalB2 / 8 / np.pi * volume
 
     #-------------------------------------------------------------------------------
-    def load_bottom(self, bottom, dr = 0.001*u.solRad):
-        self.__bxb = bottom['by'].transpose(1,0).astype(np.float64, order="C")
-        self.__byb = bottom['bx'].transpose(1,0).astype(np.float64, order="C")
-        self.__bzb = bottom['bz'].transpose(1,0).astype(np.float64, order="C")
-        self.__stepb = dr
-
-    #-------------------------------------------------------------------------------
-    def LFFF_bounded(self, bottom = None, pad = (1, 1), nz = None, dr = 0.001*u.solRad, alpha = 0):
-        if bottom is not None:
-            self.load_bottom(bottom, dr)
-        
-        assert self.__bzb is not None
-        
-        lfff = MagFieldLinFFF.create_lfff_cube(self.__bzb, pad = pad, nz = nz, alpha = alpha)    
-
-        # this cube, substitute
-        lfff['bx'][:,:,0] = self.__bxb
-        lfff['by'][:,:,0] = self.__byb
-        lfff['bz'][:,:,0] = self.__bzb
-        self.__status  = self.FIELD_BOUND
-        
-        swap = (2,1,0)
-        return self.__load_vars(lfff['bx'].transpose(swap), lfff['by'].transpose(swap), lfff['bz'].transpose(swap), self.__stepb)
-
-    #-------------------------------------------------------------------------------
     def load_cube_vars(self, box, dr = 0.001*u.solRad):
         """
             Set initial magnetic field components.
@@ -114,13 +85,40 @@ class MagFieldProcessor(MagFieldWrapper):
         return self.__load_vars(box['by'].transpose(swap), box['bx'].transpose(swap), box['bz'].transpose(swap), dr)
 
     #-------------------------------------------------------------------------------
-    def load_cube_sav(self, filename):
+    def load_bottom(self, bottom):
+        assert self.__bx is not None and self.__by is not None and self.__bz is not None
+        
+        cube = self.get_field_cube()
+        cube['bx'][:,:,0] = bottom['by'].transpose(1,0).astype(np.float64, order="C")
+        cube['by'][:,:,0] = bottom['bx'].transpose(1,0).astype(np.float64, order="C")
+        cube['bz'][:,:,0] = bottom['bz'].transpose(1,0).astype(np.float64, order="C")
+        self.__status  = self.FIELD_BOUND
+        
+        swap = (2,1,0)
+        return self.__load_vars(cube['bx'].transpose(swap), cube['by'].transpose(swap), cube['bz'].transpose(swap), self.__step)
+
+    #-------------------------------------------------------------------------------
+    def LFFF_bounded(self, bottom, pad = (1, 1), nz = None, dr = 0.001*u.solRad, alpha = 0):
+        
+        # lfff = MagFieldLinFFF.create_lfff_cube(bottom['bz'].transpose(1,0).astype(np.float64, order="C"), pad = pad, nz = nz, alpha = alpha)
+        lfff = MagFieldLinFFF.create_lfff_cube(bottom['bz'].astype(np.float64, order="C"), pad = pad, nz = nz, alpha = alpha)
+        self.load_cube_vars(lfff, dr = dr)
+
+        return self.load_bottom(bottom)
+
+    #-------------------------------------------------------------------------------
+    def sav_to_cube(self, filename):
 
         sav_data = readsav(filename, python_dict = True)
 
         box = sav_data.get('box', sav_data.get('pbox'))
 
-        box = self._as_dict(box[0])
+        return self._as_dict(box[0])
+        
+    #-------------------------------------------------------------------------------
+    def load_cube_sav(self, filename):
+
+        box = self.sav_to_cube(filename)
         
         swap = (0,2,1)
         return self.__load_vars(np.transpose(box['BY'], swap), np.transpose(box['BX'], swap), np.transpose(box['BZ'], swap), box['DR'] * u.solRad)
