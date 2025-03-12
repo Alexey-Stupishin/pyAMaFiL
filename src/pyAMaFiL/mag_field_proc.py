@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.io import readsav
 import astropy.units as u
-from mag_field_wrapper import MagFieldWrapper
-from mag_field_lin_fff import MagFieldLinFFF
+from .mag_field_wrapper import MagFieldWrapper
+from .mag_field_lin_fff import MagFieldLinFFF
 
 __author__     = "Alexey G. Stupishin"
 __email__      = "agstup@yandex.ru"
