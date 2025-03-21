@@ -7,7 +7,7 @@ __author__     = "Alexey G. Stupishin"
 __email__      = "agstup@yandex.ru"
 __copyright__  = "SUNCAST project, 2024"
 __license__    = "MIT"
-__version__    = "1.1.1"
+__version__    = "1.1.2"
 __maintainer__ = "Alexey G. Stupishin"
 __status__     = "beta"
 
@@ -52,6 +52,14 @@ class MagFieldWrapper:
         set_double_func.argtypes = [self.__mpstr, self.__mreal]
         set_double_func.restype = self.__mint
 
+        get_double_func = lib_mfw.utilGetDouble
+        get_double_func.argtypes = [self.__mpstr, self.__mptr1]
+        get_double_func.restype = self.__mint
+
+        set_setting_func = lib_mfw.utilSetSetting
+        set_setting_func.argtypes = [self.__mpstr, self.__mreal]
+        set_setting_func.restype = self.__mint
+
         get_version_func = lib_mfw.utilGetVersion
         get_version_func.argtypes = [self.__mpstr, self.__mint]
         get_version_func.restype = self.__mint
@@ -68,6 +76,8 @@ class MagFieldWrapper:
         self.__func_set = {'create_func':create_func
                          , 'set_int_func':set_int_func
                          , 'set_double_func':set_double_func
+                         , 'get_double_func':get_double_func
+                         , 'set_setting_func':set_setting_func
                          , 'get_version_func':get_version_func
                          , 'NLFFF_func':NLFFF_func
                          , 'lines_func':lines_func
@@ -83,6 +93,15 @@ class MagFieldWrapper:
         return self.__func_set['set_double_func'](prop.encode('utf-8'), np.float64(vdouble))
 
     #-------------------------------------------------------------------------------
+    def get_double(self, prop):
+        result = np.array([0], dtype = np.float64)
+        return None if self.__func_set['get_double_func'](prop.encode('utf-8'), result) == 0 else result[0]
+        
+    #-------------------------------------------------------------------------------
+    def set_setting(self, prop, vdouble):
+        return self.__func_set['set_setting_func'](prop.encode('utf-8'), np.float64(vdouble))
+
+    #-------------------------------------------------------------------------------
     @property
     def get_version(self):
         buflen = 512
@@ -94,13 +113,12 @@ class MagFieldWrapper:
         return buffer[0:term]
         
     #-------------------------------------------------------------------------------
-    def NLFFF_wrapper(self
-            , bx, by, bz  
-            , weight_bound_size = 0.1
-            , derivative_stencil = 3
-            , dense_grid_use = True
-            , debug_input = False
-             ):
+    def NLFFF_wrapper(self, bx, by, bz, **params):
+            # , weight_bound_size = 0.1
+            # , derivative_stencil = 3
+            # , dense_grid_use = True
+            # , debug_input = False
+            #  ):
         """
             Wrapper to external call of Weighted Wiegelmann NLFF Field Reconstruction Method.
             Magnetic field cube should be preliminary set. Field components modified "in place".
@@ -139,13 +157,15 @@ class MagFieldWrapper:
         """
         # assert box is None
 
-        self.set_double('weight_bound_size', weight_bound_size)
-        self.set_int('derivative_stencil', derivative_stencil)
-        self.set_int('dense_grid_use', int(dense_grid_use == True))
-        self.set_int('debug_input', int(debug_input == True))
+        # self.set_double('weight_bound_size', weight_bound_size)
+        # self.set_int('derivative_stencil', derivative_stencil)
+        # self.set_int('dense_grid_use', int(dense_grid_use == True))
+        # self.set_int('debug_input', int(debug_input == True))
 
-        Nc = bx.shape
-        N = np.array([Nc[2], Nc[1], Nc[0]], dtype = np.int32)
+        for parameter, value in params.items():
+            self.set_setting(parameter, value)
+
+        N = np.array(np.flip(bx.shape), dtype = np.int32)
         rc = self.__func_set['NLFFF_func'](N, bx, by, bz)
 
         return dict(bx = bx, by = by, bz = bz, rc = rc)
@@ -159,7 +179,7 @@ class MagFieldWrapper:
     
 #-------------------------------------------------------------------------------
     def lines_wrapper(self
-            , bx, by, bz  
+            , bx, by, bz            
             , reduce_passed = None
             , chromo_level = 1
             , seeds = None
@@ -178,12 +198,15 @@ class MagFieldWrapper:
         if seeds is None:
             n_seeds = 0
             arg_seeds = 0
-            n_total = self.__bx.size
+            n_total = bx.size
             if reduce_passed is None:
                 reduce_passed = self.PASSED_CLOSED | self.PASSED_OPENED
         else:
             # assert seeds is not 2D
-            arg_seeds = np.array(seeds.transpose((1, 0)), dtype = np.float64, order = 'C')
+            arg_seeds = np.array(seeds, dtype = np.float64, order = 'C')
+            t = arg_seeds[:, 0].copy()
+            arg_seeds[:, 0] = arg_seeds[:, 1]
+            arg_seeds[:, 1] = t 
             n_seeds = arg_seeds.shape[0]
             seeds_type = self.__mptr2
             n_total = n_seeds
@@ -194,8 +217,8 @@ class MagFieldWrapper:
             max_length = self.est_max_coords(bx.shape, n_total)
         max_length = np.int64(max_length)
 
-        n_lines = np.array([1], dtype = np.int32)
-        n_passed = np.array([1], dtype = np.int32)
+        n_lines = np.array([0], dtype = np.int32)
+        n_passed = np.array([0], dtype = np.int32)
         voxel_status = np.zeros([n_total], dtype = np.int32)
         phys_length = np.zeros([n_total], dtype = np.float64)
         av_field = np.zeros([n_total], dtype = np.float64)
@@ -204,7 +227,7 @@ class MagFieldWrapper:
         end_idx = np.zeros([n_total], dtype = np.int32)
         apex_idx = np.zeros([n_total], dtype = np.int32)
         seed_idx = np.zeros([n_total], dtype = np.int32)
-        total_length = np.array([1], dtype = np.uint64)
+        total_length = np.array([0], dtype = np.uint64)
         
         if max_length == 0:
             coords_type = self.__mvoid
@@ -236,7 +259,8 @@ class MagFieldWrapper:
                              , ls_type, lv_type, self.__mpint1                       #   26-28 uint64_t *_linesStart = nullptr, int *_linesIndex = nullptr, int *seedIdx = nullptr);
                               ]
 
-        non_passed = lines_func(self.__N, self.__bx, self.__by, self.__bz
+        N = np.array(np.flip(bx.shape), dtype = np.int32)
+        non_passed = lines_func(N, bx, by, bz
                       , reduce_passed, chromo_level 
                       , arg_seeds, n_seeds
                       , n_processes, step, tolerance, tolerance_bound
@@ -248,23 +272,29 @@ class MagFieldWrapper:
                       , lines_start, lines_index, seed_idx
                        )
         
+        if coords_type is self.__mptr2:
+            coords = coords[0:total_length[0], :]
+
         return dict(n_lines = n_lines[0]
                   , n_passed = n_passed[0]
                   , non_passed = non_passed
+                  , total_length = total_length[0]
+                  
                   , voxel_status = voxel_status
                   , phys_length = phys_length
                   , av_field = av_field
-                  , lines_length = lines_length
                   , codes = codes
+                  
+                  , apex_idx = apex_idx
                   , start_idx = start_idx
                   , end_idx = end_idx
-                  , apex_idx = apex_idx
-                  , max_length = max_length
-                  , total_length = total_length
-                  , coords = coords
+                  , seed_idx = seed_idx
+                  
+                  , lines_length = lines_length
                   , lines_start = lines_start
                   , lines_index = lines_index
-                  , seed_idx = seed_idx
+                  
+                  , coords = coords
                    )        
  
 # pydoc.writedoc("mag_field_wrapper")

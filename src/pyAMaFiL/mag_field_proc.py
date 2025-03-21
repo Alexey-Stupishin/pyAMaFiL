@@ -8,11 +8,37 @@ __author__     = "Alexey G. Stupishin"
 __email__      = "agstup@yandex.ru"
 __copyright__  = "SUNCAST project, 2024"
 __license__    = "MIT"
-__version__    = "1.1.1"
+__version__    = "1.1.2"
 __maintainer__ = "Alexey G. Stupishin"
 __status__     = "beta"
 
 # import pydoc
+
+def mfp_util_invert_index(index, sizes):
+    kx = index % sizes[0]
+    kyz = index // sizes[0]
+    ky = kyz % sizes[1]
+    kz = kyz // sizes[1]
+    
+    return (kz*sizes[0] + kx)*sizes[1] + ky
+
+def mfp_util_invert_index_array(data, sizes):
+    _data = data.copy()
+    for k in range(0, len(data)):
+        _data[k] = mfp_util_invert_index(data[k], sizes)
+
+    return _data
+
+def mfp_util_transpose_index(data, sizes, transpose):
+    if not transpose:
+        return data
+    
+    _data = data.copy()
+    for k in range(0, len(data)):
+        inv = mfp_util_invert_index(k, sizes)
+        _data[inv] = data[k]
+        
+    return _data
 
 class MagFieldProcessor(MagFieldWrapper):
     FIELD_NONE =  0
@@ -100,8 +126,7 @@ class MagFieldProcessor(MagFieldWrapper):
     #-------------------------------------------------------------------------------
     def LFFF_bounded(self, bottom, pad = (1, 1), nz = None, dr = 0.001*u.solRad, alpha = 0):
         
-        # lfff = MagFieldLinFFF.create_lfff_cube(bottom['bz'].transpose(1,0).astype(np.float64, order="C"), pad = pad, nz = nz, alpha = alpha)
-        lfff = MagFieldLinFFF.create_lfff_cube(bottom['bz'].astype(np.float64, order="C"), pad = pad, nz = nz, alpha = alpha)
+        lfff = MagFieldLinFFF.create_LFFF_cube(bottom['bz'].astype(np.float64, order="C"), pad = pad, nz = nz, alpha = alpha)
         self.load_cube_vars(lfff, dr = dr)
 
         return self.load_bottom(bottom)
@@ -145,18 +170,13 @@ class MagFieldProcessor(MagFieldWrapper):
         return dict(bx = self.__by.transpose(swap).copy(), by = self.__bx.transpose(swap).copy(), bz = self.__bz.transpose(swap).copy(), rc = rc)
 
     #-------------------------------------------------------------------------------
-    def NLFFF(self
-            , weight_bound_size = 0.1
-            , derivative_stencil = 3
-            , dense_grid_use = True
-            , debug_input = False
-             ):
+    def NLFFF(self, **kwargs):
         """
             Wrapper to external call of Weighted Wiegelmann NLFF Field Reconstruction Method.
             Magnetic field cube should be preliminary set. Field components modified "in place".
 
-                Parameters
-                ----------
+                Parameters (**kwargs)
+                ---------------------
                 weight_bound_size : float, optional
                     Bounary buffer zone size (in parts of corresponding dim. size), 
                     default is 0.1 (i.e. buffer zone is 10% of dimension size from all boundaries, 
@@ -173,10 +193,6 @@ class MagFieldProcessor(MagFieldWrapper):
                     (experimental, internal use).
                     default = 3
 
-                debug_input : bool, optional
-                    For internal use.
-                    default = False
-                    
                 Returns
                 -------
                 box : dict
@@ -187,10 +203,12 @@ class MagFieldProcessor(MagFieldWrapper):
                         zero if OK, otherwise reconstruction error (to be specified)
                 
         """
-        # assert box is None
-        self.__weight_bound_size = weight_bound_size
+        
+        assert self.__bx is not None and self.__by is not None and self.__bz is not None
 
-        rc = super().NLFFF_wrapper(self.__bx, self.__by, self.__bz, weight_bound_size, derivative_stencil, dense_grid_use, debug_input)
+        rc = super().NLFFF_wrapper(self.__bx, self.__by, self.__bz, **kwargs)
+
+        self.__weight_bound_size = super().get_double('weight_bound_size')
 
         return self.get_field_cube(rc = rc)
 
@@ -208,23 +226,26 @@ class MagFieldProcessor(MagFieldWrapper):
             , debug_input = False
              ):
 
-        # assert box is None
+        assert self.__bx is not None and self.__by is not None and self.__bz is not None
 
-        res = super().lines_wrapper(reduce_passed, chromo_level, seeds, max_length, step, tolerance, tolerance_bound, n_processes, debug_input)
+        res = super().lines_wrapper(self.__bx, self.__by, self.__bz, reduce_passed, chromo_level, seeds, max_length, step, tolerance, tolerance_bound, n_processes, debug_input)
         
-        # if reshape_3D & (seeds is None):
-        #     av_field = np.reshape(av_field, np.flip(self.__N))
-        #     phys_length = np.reshape(phys_length, np.flip(self.__N))
-        #     av_field = np.reshape(av_field, np.flip(self.__N))
-        #     start_idx = np.reshape(start_idx, np.flip(self.__N))
-        #     end_idx = np.reshape(end_idx, np.flip(self.__N))
-        #     seed_idx = np.reshape(seed_idx, np.flip(self.__N))
-        #     apex_idx = np.reshape(apex_idx, np.flip(self.__N))
-        #     voxel_status = np.reshape(voxel_status, np.flip(self.__N))
-        #     codes = np.reshape(codes, np.flip(self.__N))
+        N = np.flip(self.__bx.shape)
+        transpose = seeds is None
+        res['voxel_status'] = mfp_util_transpose_index(res['voxel_status'], N, transpose)
+        res['phys_length'] = mfp_util_transpose_index(res['phys_length'], N, transpose)
+        res['av_field'] = mfp_util_transpose_index(res['av_field'], N, transpose)
+        res['codes'] = mfp_util_transpose_index(res['codes'], N, transpose)
 
+        res['apex_idx'] = mfp_util_transpose_index(mfp_util_invert_index_array(res['apex_idx'], N), N, transpose)
+        res['start_idx'] = mfp_util_transpose_index(mfp_util_invert_index_array(res['start_idx'], N), N, transpose)
+        res['end_idx'] = mfp_util_transpose_index(mfp_util_invert_index_array(res['end_idx'], N), N, transpose)
+        res['seed_idx'] = mfp_util_transpose_index(mfp_util_invert_index_array(res['seed_idx'], N), N, transpose)
+
+        t = res['coords'][:, 0].copy()
+        res['coords'][:, 0] = res['coords'][:, 1].copy()
+        res['coords'][:, 1] = t
+        
         return res        
  
-       # reorder - 2do ?
-
-# pydoc.writedoc("mag_field_wrapper")
+# pydoc.writedoc("MagFieldProcessor")
