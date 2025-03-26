@@ -290,11 +290,11 @@ class MagFieldWrapper:
                   , end_idx = end_idx
                   , seed_idx = seed_idx
                   
-                  , lines_length = lines_length
-                  , lines_start = lines_start
-                  , lines_index = lines_index
+                  , lines_length = lines_length if max_length > 0 else None
+                  , lines_start = lines_start if max_length > 0 else None
+                  , lines_index = lines_index if max_length > 0 else None
                   
-                  , coords = coords
+                  , coords = coords if max_length > 0 else None
                    )        
  
 # pydoc.writedoc("mag_field_wrapper")

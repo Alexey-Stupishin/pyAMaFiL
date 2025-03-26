@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.io import readsav
 import astropy.units as u
-from .mag_field_wrapper import MagFieldWrapper
-from .mag_field_lin_fff import MagFieldLinFFF
+from mag_field_wrapper import MagFieldWrapper
+from mag_field_lin_fff import MagFieldLinFFF
 
 __author__     = "Alexey G. Stupishin"
 __email__      = "agstup@yandex.ru"
@@ -218,18 +218,24 @@ class MagFieldProcessor(MagFieldWrapper):
             , chromo_level = 1
             , seeds = None
             , max_length = 0
-            , reshape_3D = True
             , step = 1.0
             , tolerance = 1e-3
             , tolerance_bound = 1e-3
             , n_processes = 0
             , debug_input = False
              ):
-
+        """
+            max_length == 0: no coordinates will be stored
+            max_length > 0: max. number of coordinates to store
+            max_length < 0: max. number of coordinates to store will be automatically estimated
+        """
+        
         assert self.__bx is not None and self.__by is not None and self.__bz is not None
 
         res = super().lines_wrapper(self.__bx, self.__by, self.__bz, reduce_passed, chromo_level, seeds, max_length, step, tolerance, tolerance_bound, n_processes, debug_input)
         
+        print(res)
+
         N = np.flip(self.__bx.shape)
         transpose = seeds is None
         res['voxel_status'] = mfp_util_transpose_index(res['voxel_status'], N, transpose)
@@ -241,11 +247,10 @@ class MagFieldProcessor(MagFieldWrapper):
         res['start_idx'] = mfp_util_transpose_index(mfp_util_invert_index_array(res['start_idx'], N), N, transpose)
         res['end_idx'] = mfp_util_transpose_index(mfp_util_invert_index_array(res['end_idx'], N), N, transpose)
         res['seed_idx'] = mfp_util_transpose_index(mfp_util_invert_index_array(res['seed_idx'], N), N, transpose)
-
-        t = res['coords'][:, 0].copy()
-        res['coords'][:, 0] = res['coords'][:, 1].copy()
-        res['coords'][:, 1] = t
         
+        if res['coords'] is not None:
+            res['coords'] = res['coords'][:, [1,0,2,3]]
+
         return res        
  
 # pydoc.writedoc("MagFieldProcessor")
