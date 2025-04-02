@@ -6,7 +6,7 @@ __email__      = "agstup@yandex.ru"
 __copyright__  = "SUNCAST project, 2024-2025"
 __credits__    = ["Sergey A. Anfinogentov"]
 __license__    = "MIT"
-__version__    = "1.1.0"
+__version__    = "1.1.2"
 __maintainer__ = "Alexey G. Stupishin"
 __status__     = "beta"
 
@@ -27,12 +27,12 @@ class MagFieldLinFFF:
 
     #-------------------------------------------------------------------------------
     @staticmethod
-    def create_lfff_cube(bz, pad = (1, 1), nz = None, alpha = 0, directive_cosines = (0, 0, 1)):
+    def create_LFFF_cube(bz, pad = (1, 1), nz = None, alpha = 0, directive_cosines = (0, 0, 1)):
         lin_proc = MagFieldLinFFF()
-        return lin_proc.lfff_cube(bottom = bz, pad = pad, nz = nz, alpha = alpha, directive_cosines = directive_cosines)    
+        return lin_proc.LFFF_cube(bottom = bz, pad = pad, nz = nz, alpha = alpha, directive_cosines = directive_cosines)    
         
     #-------------------------------------------------------------------------------
-    def lfff_cube(self, bottom = None, pad = (1, 1), nz = None, alpha = 0, directive_cosines = (0, 0, 1)):
+    def LFFF_cube(self, bottom = None, pad = (1, 1), nz = None, alpha = 0, directive_cosines = (0, 0, 1)):
         
         if bottom is not None:
             self.set_field(bottom, pad)
