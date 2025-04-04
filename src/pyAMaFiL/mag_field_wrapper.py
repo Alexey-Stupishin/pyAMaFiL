@@ -7,7 +7,7 @@ __author__     = "Alexey G. Stupishin"
 __email__      = "agstup@yandex.ru"
 __copyright__  = "SUNCAST project, 2024"
 __license__    = "MIT"
-__version__    = "1.1.2"
+__version__    = "1.1.3"
 __maintainer__ = "Alexey G. Stupishin"
 __status__     = "beta"
 
