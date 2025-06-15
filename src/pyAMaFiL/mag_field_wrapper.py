@@ -21,7 +21,8 @@ class MagFieldWrapper:
     #-------------------------------------------------------------------------------
     def __init__(self, lib_path = ""):
         if lib_path == "":
-            lib_path = list(Path(__file__).parent.glob("WWNLFFFReconstruction*"))[0]
+            #lib_path = list(Path(__file__).parent.glob("WWNLFFFReconstruction*"))[0]
+            lib_path = list(Path(__file__).parent.glob("WWNLFFFReconstruction*"))[0].as_posix()
             #print(lib_path)
 
         self.__mptr1 = np.ctypeslib.ndpointer(dtype = np.float64, ndim = 1, flags = "C")
