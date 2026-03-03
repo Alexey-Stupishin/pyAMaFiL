@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyAMaFiL"
-version = "1.1.4"
+version = "1.1.5"
 readme = "README.md"
 
 dependencies = [
@@ -30,6 +30,8 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 
 [project.urls]
@@ -37,12 +39,12 @@ Issues = "https://github.com/Alexey-Stupishin/pyAMaFiL/issues"
 Repository = "https://github.com/Alexey-Stupishin/pyAMaFiL"
 
 [tool.cibuildwheel]
-skip = ["cp36*", "cp37*", "cp38*", "cp39*", "pp*", "*musl*"]
+skip = ["cp38*", "cp39*", "pp*", "*musl*"]
 build-frontend = "build"
 
 [[tool.cibuildwheel.overrides]]
 select = "cp*"
-manylinux-x86_64-image = "manylinux_2_28"
+manylinux-x86_64-image = "manylinux_2_34"
 manylinux-i686-image = "manylinux2014"
 
 #[[tool.cibuildwheel.overrides]]
