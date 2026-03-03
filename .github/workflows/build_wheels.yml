@@ -41,7 +41,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: true  # Optional, use if you have submodules
+        submodules: "recursive"  # Optional, use if you have submodules
 
     - name: Build SDist
       run: pipx run build --sdist
