@@ -1,0 +1,2 @@
+include pyinit.cpp
+recursive-include AMaFiL *.h *.hpp *.c *.cc *.cpp *.cxx *.cu *.txt
