@@ -6,3 +6,5 @@
 * 26 Jan 2025 - general refactoring, swap/transposition improvement
 * **26 Jan 2025 - tag 1.1.0** 
 * **01 Jun 2026 - tag 1.2.0** 
+* 01 Oct 2026 - new AMaFiL repository
+ 
