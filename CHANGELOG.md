@@ -7,5 +7,6 @@
 * **26 Jan 2025 - tag 1.1.0** 
 * **01 Jun 2026 - tag 1.2.0** 
 * 01 Oct 2026 - new submodule AMaFiL repository, **tag 1.2.1**
-* 21 Oct 2026 - submodule AMaFiL update (4.6.26.1021, rev.82), **tag 1.2.2**
+* 21 Oct 2026 - submodule AMaFiL update (4.6.26.1021, rev.82)
+* **22 Oct 2026 - tag 1.2.2**
  

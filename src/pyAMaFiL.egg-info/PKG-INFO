@@ -1,0 +1,57 @@
+Metadata-Version: 2.4
+Name: pyAMaFiL
+Version: 1.2.2
+Summary: Library for reconstructing solar magnetic fields with NLFFF optimization approach
+Author-email: "Alexey G. Stupishin" <agstup@yandex.ru>
+Maintainer-email: "Alexey G. Stupishin" <agstup@yandex.ru>
+Project-URL: Issues, https://github.com/Alexey-Stupishin/pyAMaFiL/issues
+Project-URL: Repository, https://github.com/Alexey-Stupishin/pyAMaFiL
+Keywords: Sun,magnetic fields,NLFFF,solar physics
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Science/Research
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Programming Language :: Python :: 3.14
+Description-Content-Type: text/markdown
+License-File: LICENCE.md
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: sunpy
+Requires-Dist: importlib-metadata; python_version >= "3.10"
+Dynamic: license-file
+
+# pyAMaFiL
+
+#### Installing from Github
+
+```bash
+pip install -U git+https://github.com/Alexey-Stupishin/pyAMaFiL
+```
+
+#### PyPI
+
+Coming soon!
+
+#### Testing development version
+
+```bash
+git submodule update --init --remote --recursive
+pip install .
+```
+
+Or, to install an [editable](https://setuptools.pypa.io/en/latest/userguide/quickstart.html#development-mode) version:
+
+```bash
+pip install --editable .
+```
+
+Importing class from Python
+
+```python
+from pyAMaFiL.mag_field_wrapper import MagFieldWrapper
+
+maglib = MagFieldWrapper()
+```
